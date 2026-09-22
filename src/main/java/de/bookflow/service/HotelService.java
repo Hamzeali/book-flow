@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import de.bookflow.dto.HotelRequest;
 import de.bookflow.dto.HotelResponse;
 import de.bookflow.entity.Hotel;
+import de.bookflow.exception.ResourceNotFoundException;
 import de.bookflow.repository.HotelRepository;
 
 @Service
@@ -55,6 +56,7 @@ public class HotelService {
     }
 
     private Hotel getSingleHotelById(Long id) {
-        return hotelRepository.findById(id).orElseThrow(() -> new RuntimeException("Hotel not found"));
+        return hotelRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Hotel not found with id " + id));
     }
 }
