@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.RestController;
 import de.bookflow.dto.HotelRequest;
 import de.bookflow.dto.HotelResponse;
 import de.bookflow.service.HotelService;
+import jakarta.validation.Valid;
+
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -28,7 +30,7 @@ public class HotelController {
     }
 
     @PostMapping
-    public ResponseEntity<HotelResponse> createHotel(@RequestBody HotelRequest request) {
+    public ResponseEntity<HotelResponse> createHotel(@Valid @RequestBody HotelRequest request) {
         HotelResponse response = hotelService.createHotel(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -44,7 +46,7 @@ public class HotelController {
     }
 
     @PutMapping("/{id}")
-    public HotelResponse updateHotel(@PathVariable Long id, @RequestBody HotelRequest request) {
+    public HotelResponse updateHotel(@PathVariable Long id, @Valid @RequestBody HotelRequest request) {
         return hotelService.updateHotel(id, request);
     }
 

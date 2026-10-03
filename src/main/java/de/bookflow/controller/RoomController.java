@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RestController;
 import de.bookflow.dto.RoomRequest;
 import de.bookflow.dto.RoomResponse;
 import de.bookflow.service.RoomService;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -28,7 +29,7 @@ public class RoomController {
     }
 
     @PostMapping
-    public ResponseEntity<RoomResponse> createRoom(@RequestBody RoomRequest request) {
+    public ResponseEntity<RoomResponse> createRoom(@Valid @RequestBody RoomRequest request) {
         RoomResponse response = roomService.createRoom(request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -45,7 +46,7 @@ public class RoomController {
     }
 
     @PutMapping("/{id}")
-    public RoomResponse updateRoom(@PathVariable Long id, @RequestBody RoomRequest request) {
+    public RoomResponse updateRoom(@PathVariable Long id, @Valid @RequestBody RoomRequest request) {
         return roomService.updateRoom(id, request);
     }
 

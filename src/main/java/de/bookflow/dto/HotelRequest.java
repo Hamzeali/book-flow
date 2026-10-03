@@ -1,4 +1,10 @@
 package de.bookflow.dto;
 
-public record HotelRequest(String name, String address, String country, String city) {
+import jakarta.validation.constraints.NotBlank;
+
+public record HotelRequest(
+        @NotBlank String name,
+        @NotBlank String address,
+        @NotBlank String country,
+        @NotBlank String city) {
 }
