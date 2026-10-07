@@ -1,6 +1,7 @@
 package de.bookflow.controller;
 
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import de.bookflow.dto.BookingRequest;
@@ -41,8 +42,10 @@ public class BookingController {
     }
 
     @GetMapping
-    public List<BookingResponse> getAllBookings() {
-        return bookingService.getAllBookings();
+    public List<BookingResponse> getAllBookings(
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) Long roomId) {
+        return bookingService.getAllBookings(userId, roomId);
     }
 
     @PatchMapping("/{id}/confirm")

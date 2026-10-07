@@ -1,6 +1,7 @@
 package de.bookflow.repository;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -19,4 +20,10 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     boolean existsOverlappingBooking(@Param("roomId") Long roomId,
             @Param("checkInDate") LocalDate checkInDate,
             @Param("checkOutDate") LocalDate checkOutDate);
+
+    List<Booking> findByUserId(Long userId);
+
+    List<Booking> findByRoomId(Long roomId);
+
+    List<Booking> findByUserIdAndRoomId(Long userId, Long roomId);
 }

@@ -68,8 +68,18 @@ public class BookingService {
         return BookingResponse.from(booking);
     }
 
-    public List<BookingResponse> getAllBookings() {
-        List<Booking> bookings = bookingRepository.findAll();
+    public List<BookingResponse> getAllBookings(Long userId, Long roomId) {
+        List<Booking> bookings;
+
+        if (userId != null && roomId != null) {
+            bookings = bookingRepository.findByUserIdAndRoomId(userId, roomId);
+        } else if (userId != null) {
+            bookings = bookingRepository.findByUserId(userId);
+        } else if (roomId != null) {
+            bookings = bookingRepository.findByRoomId(roomId);
+        } else {
+            bookings = bookingRepository.findAll();
+        }
 
         return bookings.stream()
                 .map(BookingResponse::from).toList();
