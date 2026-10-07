@@ -3,7 +3,7 @@
 BookFlow is a **hotel room booking management system** built with Spring Boot, developed as a
 learning project to practice backend development skills (REST APIs, JPA, security, testing).
 
-> **Status:** early development (M0 complete) — following the milestone plan in [docs/ROADMAP.md](docs/ROADMAP.md).
+> **Status:** in development — hotel, room, and booking APIs are implemented; automated testing, authentication, and PostgreSQL are next.
 
 ## Tech stack
 
@@ -12,9 +12,6 @@ learning project to practice backend development skills (REST APIs, JPA, securit
 - H2 (in-memory, for development) → PostgreSQL (later milestone)
 - JUnit 5 / Mockito (testing)
 - Maven
-
-See [docs/ROADMAP.md](docs/ROADMAP.md) for the full milestone-by-milestone plan, including
-upcoming work on booking logic, Spring Security/JWT auth, and PostgreSQL migration.
 
 ## Getting started
 
@@ -50,5 +47,14 @@ src/main/java/de/bookflow/
 
 ## Roadmap
 
-Development follows a milestone-based roadmap, from domain modeling through booking business
-logic, authentication, and deployment. See [docs/ROADMAP.md](docs/ROADMAP.md) for details.
+Development follows a milestone-based roadmap:
+
+- [x] Project setup
+- [x] Domain model & persistence (JPA, H2)
+- [x] REST API for hotels and rooms (DTOs, validation, error handling)
+- [x] Booking logic (overlap detection, pricing, status transitions, filtering)
+- [ ] Automated tests (Mockito, MockMvc)
+- [ ] Authentication & roles (Spring Security, JWT)
+- [ ] PostgreSQL & Flyway migrations
+- [ ] API polish (pagination, Swagger UI)
+- [ ] Deployment
