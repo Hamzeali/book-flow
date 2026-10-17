@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import de.bookflow.entity.Booking;
@@ -25,13 +26,15 @@ public class DataSeeder implements CommandLineRunner {
     private final RoomRepository roomRepository;
     private final UserRepository userRepository;
     private final BookingRepository bookingRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public DataSeeder(HotelRepository hotelRepository, RoomRepository roomRepository, UserRepository userRepository,
-            BookingRepository bookingRepository) {
+            BookingRepository bookingRepository, PasswordEncoder passwordEncoder) {
         this.hotelRepository = hotelRepository;
         this.roomRepository = roomRepository;
         this.userRepository = userRepository;
         this.bookingRepository = bookingRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -47,8 +50,9 @@ public class DataSeeder implements CommandLineRunner {
         room2 = roomRepository.save(room2);
 
         // create and save the users
-        User admin1 = new User("Hamze", "Ali", "admin@bookflow.dev", "admin123", Role.ADMIN);
-        User customer1 = new User("Fatima", "Ghadban", "customer1@bookflow.dev", "fatima123", Role.CUSTOMER);
+        User admin1 = new User("Hamze", "Ali", "admin@bookflow.dev", passwordEncoder.encode("admin123"), Role.ADMIN);
+        User customer1 = new User("Jon", "Doe", "customer1@bookflow.dev", passwordEncoder.encode("jon123"),
+                Role.CUSTOMER);
         admin1 = userRepository.save(admin1);
         customer1 = userRepository.save(customer1);
 
