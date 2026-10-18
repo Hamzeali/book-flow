@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import de.bookflow.dto.AuthResponse;
+import de.bookflow.dto.LoginRequest;
 import de.bookflow.dto.RegisterRequest;
 import de.bookflow.dto.UserResponse;
 import de.bookflow.service.AuthService;
@@ -28,4 +30,12 @@ public class AuthController {
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
+    @PostMapping("/login")
+    public ResponseEntity<AuthResponse> loginUser(@Valid @RequestBody LoginRequest request) {
+        AuthResponse response = authService.login(request);
+
+        return ResponseEntity.ok(response);
+    }
+
 }
