@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import de.bookflow.dto.BookingRequest;
@@ -18,6 +19,7 @@ import de.bookflow.exception.ResourceNotFoundException;
 import de.bookflow.repository.BookingRepository;
 import de.bookflow.repository.RoomRepository;
 import de.bookflow.repository.UserRepository;
+import de.bookflow.security.CurrentUser;
 
 @Service
 public class BookingService {
@@ -33,7 +35,7 @@ public class BookingService {
         this.userRepository = userRepository;
     }
 
-    public BookingResponse createBooking(BookingRequest request) {
+    public BookingResponse createBooking(BookingRequest request, CurrentUser currentUser) {
         // validate the dates
         if (!request.checkOutDate().isAfter(request.checkInDate())) {
             throw new InvalidBookingException("Check-out date must be after check-in date");
@@ -41,7 +43,7 @@ public class BookingService {
 
         // load the room and the user
         Room room = getSingleRoomById(request.roomId());
-        User user = getSingleUserById(request.userId());
+        User user = getSingleUserById(currentUser.id());
 
         // check for overlaps
         boolean bookingOverlap = bookingRepository.existsOverlappingBooking(request.roomId(), request.checkInDate(),
@@ -62,13 +64,20 @@ public class BookingService {
         return BookingResponse.from(saved);
     }
 
-    public BookingResponse getBookingById(Long id) {
-        Booking booking = getSingleBookingById(id);
+    public BookingResponse getBookingById(Long id, CurrentUser currentUser) {
+        Booking booking = getAccessibleBooking(id, currentUser);
 
         return BookingResponse.from(booking);
     }
 
-    public List<BookingResponse> getAllBookings(Long userId, Long roomId) {
+    public List<BookingResponse> getAllBookings(Long userId, Long roomId, CurrentUser currentUser) {
+        if (!currentUser.isAdmin()) {
+            if (userId != null && !userId.equals(currentUser.id())) {
+                throw new AccessDeniedException("You can only view your own bookings");
+            }
+            userId = currentUser.id();
+        }
+
         List<Booking> bookings;
 
         if (userId != null && roomId != null) {
@@ -99,8 +108,8 @@ public class BookingService {
         return BookingResponse.from(savedBooking);
     }
 
-    public BookingResponse cancelBooking(Long id) {
-        Booking booking = getSingleBookingById(id);
+    public BookingResponse cancelBooking(Long id, CurrentUser currentUser) {
+        Booking booking = getAccessibleBooking(id, currentUser);
         BookingStatus status = booking.getStatus();
 
         if (status == BookingStatus.CANCELLED) {
@@ -127,5 +136,15 @@ public class BookingService {
     private Booking getSingleBookingById(Long id) {
         return bookingRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id " + id));
+    }
+
+    private Booking getAccessibleBooking(Long id, CurrentUser currentUser) {
+        Booking booking = getSingleBookingById(id);
+
+        if (!currentUser.isAdmin() && !booking.getUser().getId().equals(currentUser.id())) {
+            throw new ResourceNotFoundException("Booking not found with id " + id);
+        }
+
+        return booking;
     }
 }

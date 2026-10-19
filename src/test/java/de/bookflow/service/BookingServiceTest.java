@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 
 import de.bookflow.dto.BookingRequest;
 import de.bookflow.dto.BookingResponse;
@@ -33,6 +35,7 @@ import de.bookflow.exception.ResourceNotFoundException;
 import de.bookflow.repository.BookingRepository;
 import de.bookflow.repository.RoomRepository;
 import de.bookflow.repository.UserRepository;
+import de.bookflow.security.CurrentUser;
 
 @ExtendWith(MockitoExtension.class)
 class BookingServiceTest {
@@ -51,11 +54,15 @@ class BookingServiceTest {
     private Room room;
     private User user;
 
+    private final CurrentUser customer = new CurrentUser(2L, Role.CUSTOMER);
+    private final CurrentUser admin = new CurrentUser(1L, Role.ADMIN);
+
     @BeforeEach
     void setUp() {
         Hotel hotel = new Hotel("Test Hotel", "Main Street 1", "Germany", "Berlin");
         room = new Room(hotel, 101, RoomType.DOUBLE, new BigDecimal("100.00"), 2);
         user = new User("Jane", "Doe", "jane@bookflow.dev", "secret", Role.CUSTOMER);
+        user.setId(2L);
     }
 
     @Test
@@ -63,7 +70,7 @@ class BookingServiceTest {
         // Arrange
         LocalDate checkIn = LocalDate.of(2026, 11, 10);
         LocalDate checkOut = LocalDate.of(2026, 11, 13);
-        BookingRequest request = new BookingRequest(1L, 2L, checkIn, checkOut);
+        BookingRequest request = new BookingRequest(1L, checkIn, checkOut);
 
         when(roomRepository.findById(1L)).thenReturn(Optional.of(room));
         when(userRepository.findById(2L)).thenReturn(Optional.of(user));
@@ -71,7 +78,7 @@ class BookingServiceTest {
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
-        BookingResponse response = bookingService.createBooking(request);
+        BookingResponse response = bookingService.createBooking(request, customer);
 
         // Assert
         assertThat(response.status()).isEqualTo(BookingStatus.PENDING);
@@ -85,10 +92,11 @@ class BookingServiceTest {
         // Arrange
         LocalDate checkIn = LocalDate.of(2026, 11, 13);
         LocalDate checkOut = LocalDate.of(2026, 11, 10);
-        BookingRequest request = new BookingRequest(1L, 2L, checkIn, checkOut);
+        BookingRequest request = new BookingRequest(1L, checkIn, checkOut);
 
         // Act / Assert
-        assertThatThrownBy(() -> bookingService.createBooking(request)).isInstanceOf(InvalidBookingException.class)
+        assertThatThrownBy(() -> bookingService.createBooking(request, customer))
+                .isInstanceOf(InvalidBookingException.class)
                 .hasMessage("Check-out date must be after check-in date");
 
         // Assert
@@ -100,10 +108,11 @@ class BookingServiceTest {
         // Arrange
         LocalDate checkIn = LocalDate.of(2026, 11, 10);
         LocalDate checkOut = LocalDate.of(2026, 11, 10);
-        BookingRequest request = new BookingRequest(1L, 2L, checkIn, checkOut);
+        BookingRequest request = new BookingRequest(1L, checkIn, checkOut);
 
         // Act / Assert
-        assertThatThrownBy(() -> bookingService.createBooking(request)).isInstanceOf(InvalidBookingException.class)
+        assertThatThrownBy(() -> bookingService.createBooking(request, customer))
+                .isInstanceOf(InvalidBookingException.class)
                 .hasMessage("Check-out date must be after check-in date");
 
         // Assert
@@ -115,14 +124,15 @@ class BookingServiceTest {
         // Arrange
         LocalDate checkIn = LocalDate.of(2026, 11, 10);
         LocalDate checkOut = LocalDate.of(2026, 11, 13);
-        BookingRequest request = new BookingRequest(1L, 2L, checkIn, checkOut);
+        BookingRequest request = new BookingRequest(1L, checkIn, checkOut);
 
         when(roomRepository.findById(1L)).thenReturn(Optional.of(room));
         when(userRepository.findById(2L)).thenReturn(Optional.of(user));
         when(bookingRepository.existsOverlappingBooking(1L, checkIn, checkOut)).thenReturn(true);
 
         // Act / Assert
-        assertThatThrownBy(() -> bookingService.createBooking(request)).isInstanceOf(BookingConflictException.class)
+        assertThatThrownBy(() -> bookingService.createBooking(request, customer))
+                .isInstanceOf(BookingConflictException.class)
                 .hasMessage("Room is already booked for the selected dates");
         verify(bookingRepository, never()).save(any());
     }
@@ -132,12 +142,13 @@ class BookingServiceTest {
         // Arrange
         LocalDate checkIn = LocalDate.of(2026, 11, 10);
         LocalDate checkOut = LocalDate.of(2026, 11, 13);
-        BookingRequest request = new BookingRequest(1L, 2L, checkIn, checkOut);
+        BookingRequest request = new BookingRequest(1L, checkIn, checkOut);
 
         when(roomRepository.findById(1L)).thenReturn(Optional.empty());
 
         // Act / Assert
-        assertThatThrownBy(() -> bookingService.createBooking(request)).isInstanceOf(ResourceNotFoundException.class)
+        assertThatThrownBy(() -> bookingService.createBooking(request, customer))
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Room not found with id 1");
         verify(bookingRepository, never()).save(any());
     }
@@ -147,13 +158,14 @@ class BookingServiceTest {
         // Arrange
         LocalDate checkIn = LocalDate.of(2026, 11, 10);
         LocalDate checkOut = LocalDate.of(2026, 11, 13);
-        BookingRequest request = new BookingRequest(1L, 2L, checkIn, checkOut);
+        BookingRequest request = new BookingRequest(1L, checkIn, checkOut);
 
         when(roomRepository.findById(1L)).thenReturn(Optional.of(room));
         when(userRepository.findById(2L)).thenReturn(Optional.empty());
 
         // Act / Assert
-        assertThatThrownBy(() -> bookingService.createBooking(request)).isInstanceOf(ResourceNotFoundException.class)
+        assertThatThrownBy(() -> bookingService.createBooking(request, customer))
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("User not found with id 2");
         verify(bookingRepository, never()).save(any());
     }
@@ -192,7 +204,7 @@ class BookingServiceTest {
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
-        BookingResponse response = bookingService.cancelBooking(5L);
+        BookingResponse response = bookingService.cancelBooking(5L, customer);
 
         // Assert
         assertThat(response.status()).isEqualTo(BookingStatus.CANCELLED);
@@ -206,7 +218,7 @@ class BookingServiceTest {
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
-        BookingResponse response = bookingService.cancelBooking(5L);
+        BookingResponse response = bookingService.cancelBooking(5L, customer);
 
         // Assert
         assertThat(response.status()).isEqualTo(BookingStatus.CANCELLED);
@@ -219,14 +231,77 @@ class BookingServiceTest {
         when(bookingRepository.findById(5L)).thenReturn(Optional.of(booking));
 
         // Act / Assert
-        assertThatThrownBy(() -> bookingService.cancelBooking(5L)).isInstanceOf(InvalidBookingException.class)
+        assertThatThrownBy(() -> bookingService.cancelBooking(5L, customer)).isInstanceOf(InvalidBookingException.class)
                 .hasMessage("Booking is already cancelled");
         verify(bookingRepository, never()).save(any());
+    }
+
+    @Test
+    void getBookingById_withOtherCustomersBooking_throwsResourceNotFoundException() {
+        // Arrange
+        Booking booking = bookingWithStatus(BookingStatus.PENDING);
+        booking.setId(5L);
+        when(bookingRepository.findById(5L)).thenReturn(Optional.of(booking));
+
+        // Act / Assert
+        assertThatThrownBy(() -> bookingService.getBookingById(5L, new CurrentUser(3L, Role.CUSTOMER)))
+                .isInstanceOf(ResourceNotFoundException.class).hasMessage("Booking not found with id 5");
+    }
+
+    @Test
+    void getBookingById_asAdmin_returnsAnyBooking() {
+        // Arrange
+        Booking booking = bookingWithStatus(BookingStatus.PENDING);
+        booking.setId(5L);
+        when(bookingRepository.findById(5L)).thenReturn(Optional.of(booking));
+
+        // Act
+        BookingResponse response = bookingService.getBookingById(5L, admin);
+
+        // Assert
+        assertThat(response.id()).isEqualTo(5L);
+    }
+
+    @Test
+    void cancelBooking_withOtherCustomersBooking_throwsResourceNotFoundException() {
+        // Arrange
+        Booking booking = bookingWithStatus(BookingStatus.PENDING);
+        booking.setId(5L);
+        when(bookingRepository.findById(5L)).thenReturn(Optional.of(booking));
+
+        // Act / Assert
+        assertThatThrownBy(() -> bookingService.cancelBooking(5L, new CurrentUser(3L, Role.CUSTOMER)))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Booking not found with id 5");
+        verify(bookingRepository, never()).save(any());
+    }
+
+    @Test
+    void getAllBookings_asCustomerWithOtherUserId_throwsAccessDeniedException() {
+        // Act / Assert
+        assertThatThrownBy(() -> bookingService.getAllBookings(3L, null, customer))
+                .isInstanceOf(AccessDeniedException.class).hasMessage("You can only view your own bookings");
+        verify(bookingRepository, never()).findAll();
+    }
+
+    @Test
+    void getAllBookings_asCustomerWithoutFilter_returnsOnlyOwnBookings() {
+        // Arrange
+        Booking booking = bookingWithStatus(BookingStatus.PENDING);
+        booking.setId(5L);
+        when(bookingRepository.findByUserId(2L)).thenReturn(List.of(booking));
+
+        // Act
+        List<BookingResponse> responses = bookingService.getAllBookings(null, null, customer);
+
+        // Assert
+        assertThat(responses).hasSize(1);
+        assertThat(responses.get(0).userId()).isEqualTo(2L);
+        verify(bookingRepository, never()).findAll();
     }
 
     private Booking bookingWithStatus(BookingStatus status) {
         return new Booking(room, user, LocalDate.of(2026, 11, 10), LocalDate.of(2026, 11, 13),
                 status, new BigDecimal("300.00"));
     }
-
 }

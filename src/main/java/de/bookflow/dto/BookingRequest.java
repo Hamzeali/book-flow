@@ -6,8 +6,7 @@ import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotNull;
 
 public record BookingRequest(
-        @NotNull Long roomId,
-        @NotNull Long userId,
-        @NotNull @FutureOrPresent LocalDate checkInDate,
-        @NotNull LocalDate checkOutDate) {
+                @NotNull Long roomId,
+                @NotNull @FutureOrPresent LocalDate checkInDate,
+                @NotNull LocalDate checkOutDate) {
 }
