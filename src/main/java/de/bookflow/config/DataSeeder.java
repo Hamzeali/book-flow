@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -20,6 +21,7 @@ import de.bookflow.repository.RoomRepository;
 import de.bookflow.repository.UserRepository;
 
 @Component
+@Profile("dev")
 public class DataSeeder implements CommandLineRunner {
 
     private final HotelRepository hotelRepository;
@@ -39,6 +41,10 @@ public class DataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
+        if (userRepository.count() > 0) {
+            return;
+        }
+
         // create and save the hotel
         Hotel rotanaHotel = new Hotel("Rotana", "Markt Street 2", "Germany", "Nordhorn");
         rotanaHotel = hotelRepository.save(rotanaHotel);
